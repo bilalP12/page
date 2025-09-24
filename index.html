@@ -1,15 +1,239 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>PDF</title>
-    <style>
-      html,body{height:100%;margin:0}
-      iframe{width:100%;height:100%;border:0}
-    </style>
-  </head>
-  <body>
-    <iframe src="./pdf/a4 copy.pdf"></iframe>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image Slider</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100dvh; /* mobile-safe viewport height */
+    }
+
+    .slider-container {
+      width: 100vw;
+      height: 100dvh;            /* was 100vh */
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slider {
+      width: 500%;
+      display: flex;
+      /* auto animation disabled; we control via JS */
+      animation: none;
+      will-change: transform;
+    }
+
+    .slide {
+      width: 20%;
+      height: 100%;              /* fill container height */
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide img {
+      width: 100%;
+      height: 100%;              /* was 100vh */
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+
+    .slide-content {
+      position: absolute;
+      inset: auto 0 0 0;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+      color: #fff;
+      padding: 60px 30px 30px;
+      transform: translateY(100%);
+      transition: transform 0.5s ease;
+      pointer-events: none;
+    }
+
+    .slide-title {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,.5);
+    }
+
+    .slide-description {
+      font-size: 1.1rem;
+      line-height: 1.5;
+      opacity: .9;
+    }
+
+    .slider-indicators {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 15px;
+      z-index: 10;
+    }
+
+    .indicator {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.5);
+      border: 2px solid #fff;
+      cursor: pointer;
+      transition: all .3s ease;
+      backdrop-filter: blur(5px);
+    }
+    .indicator:hover { background: rgba(255,255,255,.8); transform: scale(1.2); }
+    .indicator.active { background:#fff; transform: scale(1.3); box-shadow: 0 0 20px rgba(255,255,255,.8); }
+
+    .slider-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,.7);
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.2);
+      color: #fff;
+      display: grid; place-items:center;
+      font-size: 2rem; font-weight: bold;
+      cursor: pointer;
+      transition: all .3s ease;
+      z-index: 10;
+      backdrop-filter: blur(10px);
+    }
+    .slider-nav:hover {
+      background: rgba(0,0,0,.9);
+      transform: translateY(-50%) scale(1.2);
+      box-shadow: 0 10px 25px rgba(0,0,0,.5);
+      border-color: rgba(255,255,255,.4);
+    }
+    .slider-nav:active { transform: translateY(-50%) scale(1.1); }
+    .prev { left: 30px; }
+    .next { right: 30px; }
+
+    @media (max-width: 768px) {
+      .slide-title { font-size: 1.5rem; }
+      .slide-description { font-size: 1rem; }
+      .slider-nav { width: 50px; height: 50px; font-size: 1.5rem; }
+      .prev { left: 15px; }
+      .next { right: 15px; }
+      .indicator { width: 12px; height: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="slider-container">
+    <div class="slider">
+      <div class="slide">
+        <img src="./images/pic1.jpg" alt="Mountain Landscape">
+        <div class="slide-content">
+          <h2 class="slide-title">Mountain Paradise</h2>
+          <p class="slide-description">Discover breathtaking mountain landscapes and pristine wilderness that will leave you speechless.</p>
+        </div>
+      </div>
+
+      <div class="slide">
+        <img src="./images/pic2.jpg" alt="Ocean Waves">
+        <div class="slide-content">
+          <h2 class="slide-title">Ocean Dreams</h2>
+          <p class="slide-description">Experience the serenity of crystal-clear waters and endless horizons that inspire wanderlust.</p>
+        </div>
+      </div>
+
+      <div class="slide">
+        <img src="./images/pic3.jpg" alt="Forest Path">
+        <div class="slide-content">
+          <h2 class="slide-title">Forest Adventure</h2>
+          <p class="slide-description">Wander through ancient forests where sunlight dances through emerald canopies.</p>
+        </div>
+      </div>
+
+      <div class="slide">
+        <img src="./images/pic4.jpg" alt="Desert Sunset">
+        <div class="slide-content">
+          <h2 class="slide-title">Desert Majesty</h2>
+          <p class="slide-description">Witness spectacular sunsets paint the desert sky in magnificent colors of gold and crimson.</p>
+        </div>
+      </div>
+
+      <div class="slide">
+        <img src="./images/pic5.jpg" alt="Mountain Landscape">
+        <div class="slide-content">
+          <h2 class="slide-title">Mountain Paradise</h2>
+          <p class="slide-description">Discover breathtaking mountain landscapes and pristine wilderness that will leave you speechless.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 indicators for 5 slides -->
+    <div class="slider-indicators">
+      <div class="indicator active"></div>
+      <div class="indicator"></div>
+      <div class="indicator"></div>
+      <div class="indicator"></div>
+      <div class="indicator"></div>
+    </div>
+
+    <button class="slider-nav prev" aria-label="Previous">&#8249;</button>
+    <button class="slider-nav next" aria-label="Next">&#8250;</button>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const indicators = document.querySelectorAll('.indicator');
+    const slider = document.querySelector('.slider');
+
+    function updateSlider() {
+      slider.style.transform = `translateX(-${currentSlide * 20}%)`;
+      slider.style.transition = 'transform 0.6s ease-in-out';
+      indicators.forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
+    }
+
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % slides.length;        // dynamic length
+      updateSlider();
+    }
+
+    function prevSlide() {
+      currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+      updateSlider();
+    }
+
+    document.querySelector('.next').addEventListener('click', nextSlide);
+    document.querySelector('.prev').addEventListener('click', prevSlide);
+
+    indicators.forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        currentSlide = i;
+        updateSlider();
+      });
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') nextSlide();
+      if (e.key === 'ArrowLeft')  prevSlide();
+    });
+
+    // Touch/swipe support
+    let startX = 0;
+    slider.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+    slider.addEventListener('touchend',   (e) => {
+      const endX = e.changedTouches[0].clientX;
+      const diff = startX - endX;
+      const threshold = 50;
+      if (Math.abs(diff) > threshold) (diff > 0 ? nextSlide : prevSlide)();
+    }, { passive: true });
+
+    // init
+    updateSlider();
+  </script>
+</body>
 </html>
