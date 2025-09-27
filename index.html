@@ -11,7 +11,7 @@
     body{
       background:#000;
       overflow:hidden;
-      touch-action:pan-y;
+      touch-action:manipulation;
       -webkit-tap-highlight-color:transparent;
       font-family:system-ui,sans-serif;
     }
@@ -38,6 +38,25 @@
       background-position:center center;
       background-repeat:no-repeat;
       background-color:#000;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .slide-img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      transform-origin:center center;
+      transition:transform 0.3s ease;
+      cursor:grab;
+    }
+
+    .slide-img.zoomed{
+      cursor:grab;
+    }
+
+    .slide-img:active{
+      cursor:grabbing;
     }
 
     .dots{
@@ -70,11 +89,21 @@
 <body>
   <div class="slider">
     <div class="track" id="track" style="width:500vw">
-      <div class="slide" style="background-image:url('./images/Artboard\ 1-100.jpg')"></div>
-      <div class="slide" style="background-image:url('./images/Artboard\ 2-100.jpg')"></div>
-      <div class="slide" style="background-image:url('./images/Artboard\ 3-100.jpg')"></div>
-      <div class="slide" style="background-image:url('./images/Artboard\ 4-100.jpg')"></div>
-      <div class="slide" style="background-image:url('./images/Artboard\ 5-100.jpg')"></div>
+      <div class="slide">
+        <img class="slide-img" src="./images/Artboard 1-100.jpg" alt="Slide 1">
+      </div>
+      <div class="slide">
+        <img class="slide-img" src="./images/Artboard 2-100.jpg" alt="Slide 2">
+      </div>
+      <div class="slide">
+        <img class="slide-img" src="./images/Artboard 3-100.jpg" alt="Slide 3">
+      </div>
+      <div class="slide">
+        <img class="slide-img" src="./images/Artboard 4-100.jpg" alt="Slide 4">
+      </div>
+      <div class="slide">
+        <img class="slide-img" src="./images/Artboard 5-100.jpg" alt="Slide 5">
+      </div>
     </div>
     
     <div class="dots">
@@ -91,19 +120,149 @@
     const track = document.getElementById('track');
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.dot');
+    const images = document.querySelectorAll('.slide-img');
 
     function go(i) {
       current = (i + slides.length) % slides.length;
       track.style.transform = `translateX(-${current * 100}vw)`;
       dots.forEach((d, idx) => d.classList.toggle('active', idx === current));
+      
+      // Reset all image zooms when changing slides
+      images.forEach(img => {
+        img.style.transform = 'scale(1) translate(0, 0)';
+        img.classList.remove('zoomed');
+      });
     }
 
-    // Swipe
-    let startX = 0;
-    track.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+    // Swipe for slide navigation
+    let startX = 0, startY = 0;
+    let isZoomed = false;
+    
+    track.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    });
+    
     track.addEventListener('touchend', e => {
-      const dx = startX - e.changedTouches[0].clientX;
-      if (Math.abs(dx) > 50) go(current + (dx > 0 ? 1 : -1));
+      const currentImg = images[current];
+      isZoomed = currentImg.classList.contains('zoomed');
+      
+      // Only allow slide navigation if image is not zoomed
+      if (!isZoomed) {
+        const dx = startX - e.changedTouches[0].clientX;
+        const dy = Math.abs(startY - e.changedTouches[0].clientY);
+        
+        // Horizontal swipe for slides (and not too much vertical movement)
+        if (Math.abs(dx) > 50 && dy < 100) {
+          go(current + (dx > 0 ? 1 : -1));
+        }
+      }
+    });
+
+    // Zoom functionality for each image
+    images.forEach((img, index) => {
+      let scale = 1;
+      let translateX = 0;
+      let translateY = 0;
+      let lastTouchDistance = 0;
+      let lastTouchCenter = {x: 0, y: 0};
+      let isDragging = false;
+
+      // Pinch to zoom
+      img.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        
+        if (e.touches.length === 2) {
+          const touch1 = e.touches[0];
+          const touch2 = e.touches[1];
+          lastTouchDistance = Math.sqrt(
+            Math.pow(touch2.clientX - touch1.clientX, 2) + 
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+          );
+          lastTouchCenter = {
+            x: (touch1.clientX + touch2.clientX) / 2,
+            y: (touch1.clientY + touch2.clientY) / 2
+          };
+        } else if (e.touches.length === 1 && scale > 1) {
+          isDragging = true;
+          lastTouchCenter = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+          };
+        }
+      });
+
+      img.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (e.touches.length === 2) {
+          // Pinch zoom
+          const touch1 = e.touches[0];
+          const touch2 = e.touches[1];
+          const distance = Math.sqrt(
+            Math.pow(touch2.clientX - touch1.clientX, 2) + 
+            Math.pow(touch2.clientY - touch1.clientY, 2)
+          );
+
+          if (lastTouchDistance > 0) {
+            const newScale = scale * (distance / lastTouchDistance);
+            scale = Math.max(1, Math.min(4, newScale)); // Limit zoom between 1x and 4x
+            
+            if (scale > 1) {
+              img.classList.add('zoomed');
+            } else {
+              img.classList.remove('zoomed');
+              translateX = 0;
+              translateY = 0;
+            }
+            
+            img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+          }
+          
+          lastTouchDistance = distance;
+        } else if (e.touches.length === 1 && isDragging && scale > 1) {
+          // Pan when zoomed
+          const touch = e.touches[0];
+          const deltaX = touch.clientX - lastTouchCenter.x;
+          const deltaY = touch.clientY - lastTouchCenter.y;
+          
+          translateX += deltaX / scale;
+          translateY += deltaY / scale;
+          
+          // Limit panning to image bounds
+          const maxTranslate = (scale - 1) * 100;
+          translateX = Math.max(-maxTranslate, Math.min(maxTranslate, translateX));
+          translateY = Math.max(-maxTranslate, Math.min(maxTranslate, translateY));
+          
+          img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+          
+          lastTouchCenter = {x: touch.clientX, y: touch.clientY};
+        }
+      });
+
+      img.addEventListener('touchend', (e) => {
+        isDragging = false;
+        lastTouchDistance = 0;
+      });
+
+      // Double tap to reset zoom
+      let lastTap = 0;
+      img.addEventListener('touchend', (e) => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        
+        if (tapLength < 500 && tapLength > 0) {
+          // Double tap detected
+          scale = 1;
+          translateX = 0;
+          translateY = 0;
+          img.classList.remove('zoomed');
+          img.style.transform = `scale(${scale}) translate(${translateX}px, ${translateY}px)`;
+        }
+        
+        lastTap = currentTime;
+      });
     });
 
     // Dot navigation
