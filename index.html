@@ -84,6 +84,40 @@
       background:#fff;
       transform:scale(1.2);
     }
+
+    .nav-btn{
+      position:fixed;
+      top:50%;
+      transform:translateY(-50%);
+      width:44px;
+      height:44px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:5;
+      background:rgba(0,0,0,.4);
+      color:#fff;
+      border:1px solid rgba(255,255,255,.3);
+      font-size:20px;
+      font-weight:bold;
+      cursor:pointer;
+      user-select:none;
+      backdrop-filter:blur(4px);
+    }
+
+    .prev-btn{
+      left:15px;
+    }
+
+    .next-btn{
+      right:15px;
+    }
+
+    .nav-btn:active{
+      transform:translateY(-50%) scale(0.95);
+      background:rgba(0,0,0,.6);
+    }
   </style>
 </head>
 <body>
@@ -106,6 +140,9 @@
       </div>
     </div>
     
+    <button class="nav-btn prev-btn" id="prevBtn">‹</button>
+    <button class="nav-btn next-btn" id="nextBtn">›</button>
+    
     <div class="dots">
       <div class="dot active"></div>
       <div class="dot"></div>
@@ -121,6 +158,8 @@
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.dot');
     const images = document.querySelectorAll('.slide-img');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
 
     function go(i) {
       current = (i + slides.length) % slides.length;
@@ -264,6 +303,10 @@
         lastTap = currentTime;
       });
     });
+
+    // Navigation buttons
+    prevBtn.addEventListener('click', () => go(current - 1));
+    nextBtn.addEventListener('click', () => go(current + 1));
 
     // Dot navigation
     dots.forEach((d, i) => d.addEventListener('click', () => go(i)));
