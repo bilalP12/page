@@ -61,6 +61,7 @@
       background: rgba(255,255,255,.6);
       border: 2px solid rgba(255,255,255,.95);
       transition: transform .15s, background .15s;
+      cursor: pointer;
     }
     .dot.active{ background:#fff; transform: scale(1.15); }
 
@@ -84,48 +85,70 @@
 <body>
 
   <div class="slider-root" id="sliderRoot">
-    <div class="slider-track" id="sliderTrack" style="width: 500vw;">
-      <!-- Slides: set background images here -->
-      <section class="slide" style="background-image:url('./images/Artboard\ 1-100.jpg')"></section>
-      <section class="slide" style="background-image:url('./images/Artboard\ 2-100.jpg')"></section>
-      <section class="slide" style="background-image:url('./images/Artboard\ 3-100.jpg')"></section>
-      <section class="slide" style="background-image:url('./images/Artboard\ 4-100.jpg')"></section>
-      <section class="slide" style="background-image:url('./images/Artboard\ 5-100.jpg')"></section>
-    </div>
+    <div class="slider-track" id="sliderTrack"></div>
 
     <!-- Controls (tap targets kept small) -->
     <button class="nav prev" aria-label="Previous" id="prevBtn">&#8249;</button>
     <button class="nav next" aria-label="Next" id="nextBtn">&#8250;</button>
 
-    <div class="slider-dots" id="dots">
-      <div class="dot active"></div>
-      <div class="dot"></div>
-      <div class="dot"></div>
-      <div class="dot"></div>
-      <div class="dot"></div>
-    </div>
+    <div class="slider-dots" id="dots"></div>
   </div>
 
   <script>
+    // 🔧 Put your images here. Use plain file names; we will encode spaces safely.
+    const images = [
+      "./images/Artboard 1-100.jpg",
+      "./images/Artboard 2-100.jpg",
+      "./images/Artboard 3-100.jpg",
+      "./images/Artboard 4-100.jpg",
+      "./images/Artboard 5-100.jpg",
+    ];
+
     // Minimal JS for mobile
     let current = 0;
     const track = document.getElementById('sliderTrack');
-    const slides = document.querySelectorAll('.slide');
-    const dots   = document.querySelectorAll('.dot');
+    const dotsWrap = document.getElementById('dots');
     const prev   = document.getElementById('prevBtn');
     const next   = document.getElementById('nextBtn');
 
+    // Build slides + dots dynamically and set track width
+    function build() {
+      // slides
+      track.innerHTML = images.map((src) => {
+        const safe = encodeURI(src); // handles spaces and unicode safely
+        return `<section class="slide" style="background-image:url('${safe}')"></section>`;
+      }).join('');
+
+      // width = N * 100vw
+      track.style.width = `${images.length * 100}vw`;
+
+      // dots
+      dotsWrap.innerHTML = images.map((_, i) =>
+        `<div class="dot${i===0 ? ' active':''}"></div>`
+      ).join('');
+
+      // dot click handlers
+      dotsWrap.querySelectorAll('.dot').forEach((d, i) => {
+        d.addEventListener('click', () => go(i));
+      });
+    }
+
+    function setActiveDot() {
+      dotsWrap.querySelectorAll('.dot').forEach((d, idx) =>
+        d.classList.toggle('active', idx === current)
+      );
+    }
+
     function go(i){
-      current = (i + slides.length) % slides.length;
+      current = (i + images.length) % images.length;
       track.style.transform = `translateX(-${current * 100}vw)`;
-      dots.forEach((d,idx)=>d.classList.toggle('active', idx===current));
+      setActiveDot();
     }
     function nextSlide(){ go(current + 1); }
     function prevSlide(){ go(current - 1); }
 
     next.addEventListener('click', nextSlide);
     prev.addEventListener('click', prevSlide);
-    dots.forEach((d, i)=> d.addEventListener('click', ()=> go(i)));
 
     // Swipe (mobile)
     let startX = 0;
@@ -139,7 +162,8 @@
     function setVhVar(){ document.documentElement.style.setProperty('--vh', `${window.innerHeight}px`); }
     setVhVar(); addEventListener('resize', setVhVar);
 
-    // init
+    // Init
+    build();
     go(0);
   </script>
 </body>
