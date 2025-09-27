@@ -2,173 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Fullscreen Background Slider</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Mobile Fullscreen Slider</title>
   <style>
-    /* Reset + viewport helpers */
+    /* Reset + mobile viewport helpers */
     *{box-sizing:border-box;margin:0;padding:0}
     html, body { height: 100%; }
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      overflow: hidden;                /* no scroll; we control layout */
-      background: #000;                /* visible while first image loads */
-    }
-    /* Use 100dvh when supported to avoid mobile address bar issues */
-    :root { --vh: 100vh; }
+    :root { --vh: 100vh; }            /* fallback */
     @supports (height: 100dvh){
-      :root { --vh: 100dvh; }
+      :root { --vh: 100dvh; }         /* mobile-safe height */
     }
 
-    /* The whole slider covers the viewport */
-    .slider-root {
-      position: fixed;
-      inset: 0;
+    body{
+      background:#000;                /* visible while images load */
+      overflow:hidden;                /* no scroll; it's a fullscreen slider */
+      touch-action: pan-y;            /* allow vertical page gestures if inside webview */
+      -webkit-tap-highlight-color: transparent;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    /* Root slider takes the whole screen */
+    .slider-root{
+      position: fixed; inset: 0;
       width: 100vw;
       height: var(--vh);
       overflow: hidden;
     }
 
-    /* Track = N * 100vw, we slide it left/right */
-    .slider-track {
+    /* Track is N * 100vw; we translate it by slides */
+    .slider-track{
       height: 100%;
       display: flex;
       will-change: transform;
-      transition: transform .6s ease-in-out;
+      transition: transform .5s ease-in-out;
     }
 
-    /* Each slide fills the viewport and uses background-image */
-    .slide {
+    /* Each slide is a fullscreen background image */
+    .slide{
       width: 100vw;
       height: var(--vh);
       flex: 0 0 100vw;
-      position: relative;
-      background-size: cover;          /* full screen image */
-      background-position: center;     /* center focal point */
+      background-size: cover;       /* full image, no letterboxing */
+      background-position: center;  /* adjust focal point per image if needed */
       background-repeat: no-repeat;
     }
 
-    /* Optional overlay gradient for text readability */
-    .slide::after{
-      content:"";
-      position:absolute; inset:0;
-      background: linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.55));
-      pointer-events:none;
-    }
-
-    /* Content overlay (optional) */
-    .slide-content{
-      position:absolute; left: 5vw; right: 5vw; bottom: 8vh;
-      color:#fff;
-      text-shadow: 0 8px 28px rgba(0,0,0,.6);
-      max-width: 1000px;
-    }
-    .slide-title{
-      font-weight: 800;
-      font-size: clamp(22px, 5vw, 56px);
-      line-height: 1.05;
-      letter-spacing: .3px;
-    }
-    .slide-description{
-      margin-top: 10px;
-      font-size: clamp(14px, 2.2vw, 20px);
-      opacity: .92;
-      max-width: 70ch;
-    }
-
-    /* Indicators (dots) */
+    /* Dots (minimal) */
     .slider-dots{
-      position: fixed;
-      left: 50%;
-      bottom: 20px;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 10px;
-      z-index: 10;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(0,0,0,.35);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,.2);
+      position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+      display: flex; gap: 10px; z-index: 5;
+      padding: 6px 10px; border-radius: 999px;
+      background: rgba(0,0,0,.28);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,.15);
     }
     .dot{
-      width: 10px; height: 10px; border-radius: 50%;
-      background: rgba(255,255,255,.55);
-      border: 2px solid rgba(255,255,255,.9);
-      cursor: pointer;
-      transition: transform .2s, background .2s;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,.6);
+      border: 2px solid rgba(255,255,255,.95);
+      transition: transform .15s, background .15s;
     }
-    .dot.active{ background:#fff; transform: scale(1.2); }
+    .dot.active{ background:#fff; transform: scale(1.15); }
 
-    /* Arrows */
+    /* Arrows (kept small for mobile; remove if you don’t want them) */
     .nav{
-      position: fixed; top: 50%;
-      transform: translateY(-50%);
-      width: 48px; height: 48px; border-radius: 50%;
-      display: grid; place-items: center;
-      color: #fff; cursor: pointer; z-index: 10;
-      background: rgba(0,0,0,.45);
-      border: 1px solid rgba(255,255,255,.3);
-      backdrop-filter: blur(6px);
-      transition: transform .2s ease, background .2s ease;
+      position: fixed; top: 50%; transform: translateY(-50%);
+      width: 40px; height: 40px; border-radius: 50%;
+      display: grid; place-items: center; z-index: 5;
+      background: rgba(0,0,0,.35); color:#fff; border: 1px solid rgba(255,255,255,.25);
       user-select: none;
     }
-    .nav:hover{ background: rgba(0,0,0,.6); transform: translateY(-50%) scale(1.06); }
-    .nav:active{ transform: translateY(-50%) scale(.98); }
-    .prev{ left: 16px; }
-    .next{ right: 16px; }
+    .prev{ left: 10px; } .next{ right: 10px; }
 
-    /* Small tweaks for tiny screens */
-    @media (max-width: 420px){
-      .nav{ width: 42px; height: 42px; }
+    /* Desktop: still works, but keep everything simple without changing size logic */
+    @media (min-width: 768px){
+      .nav{ width: 44px; height: 44px; }
       .dot{ width: 9px; height: 9px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Fullscreen slider -->
   <div class="slider-root" id="sliderRoot">
     <div class="slider-track" id="sliderTrack" style="width: 500vw;">
-      <!-- Slide 1 -->
-      <section class="slide" style="background-image:url('./images/pic1.jpg')">
-        <div class="slide-content">
-          <h2 class="slide-title">Mountain Paradise</h2>
-          <p class="slide-description">Discover breathtaking mountain landscapes and pristine wilderness.</p>
-        </div>
-      </section>
-      <!-- Slide 2 -->
-      <section class="slide" style="background-image:url('./images/pic2.jpg')">
-        <div class="slide-content">
-          <h2 class="slide-title">Ocean Dreams</h2>
-          <p class="slide-description">Experience the serenity of crystal-clear waters and endless horizons.</p>
-        </div>
-      </section>
-      <!-- Slide 3 -->
-      <section class="slide" style="background-image:url('./images/pic3.jpg')">
-        <div class="slide-content">
-          <h2 class="slide-title">Forest Adventure</h2>
-          <p class="slide-description">Wander through ancient forests under emerald canopies.</p>
-        </div>
-      </section>
-      <!-- Slide 4 -->
-      <section class="slide" style="background-image:url('./images/pic4.jpg')">
-        <div class="slide-content">
-          <h2 class="slide-title">Desert Majesty</h2>
-          <p class="slide-description">Spectacular sunsets paint the desert sky in gold and crimson.</p>
-        </div>
-      </section>
-      <!-- Slide 5 -->
-      <section class="slide" style="background-image:url('./images/pic5.jpg')">
-        <div class="slide-content">
-          <h2 class="slide-title">High Peaks</h2>
-          <p class="slide-description">Crisp air and sweeping views from the summit.</p>
-        </div>
-      </section>
+      <!-- Slides: set background images here -->
+      <section class="slide" style="background-image:url('./images/pic1.jpg')"></section>
+      <section class="slide" style="background-image:url('./images/pic2.jpg')"></section>
+      <section class="slide" style="background-image:url('./images/pic3.jpg')"></section>
+      <section class="slide" style="background-image:url('./images/pic4.jpg')"></section>
+      <section class="slide" style="background-image:url('./images/pic5.jpg')"></section>
     </div>
 
-    <!-- Controls -->
-    <button class="nav prev" aria-label="Previous slide" id="prevBtn">&#8249;</button>
-    <button class="nav next" aria-label="Next slide" id="nextBtn">&#8250;</button>
+    <!-- Controls (tap targets kept small) -->
+    <button class="nav prev" aria-label="Previous" id="prevBtn">&#8249;</button>
+    <button class="nav next" aria-label="Next" id="nextBtn">&#8250;</button>
 
     <div class="slider-dots" id="dots">
       <div class="dot active"></div>
@@ -180,7 +107,7 @@
   </div>
 
   <script>
-    // Keep JS tiny and robust
+    // Minimal JS for mobile
     let current = 0;
     const track = document.getElementById('sliderTrack');
     const slides = document.querySelectorAll('.slide');
@@ -200,21 +127,15 @@
     prev.addEventListener('click', prevSlide);
     dots.forEach((d, i)=> d.addEventListener('click', ()=> go(i)));
 
-    // Keyboard nav
-    document.addEventListener('keydown', e=>{
-      if (e.key === 'ArrowRight') nextSlide();
-      if (e.key === 'ArrowLeft')  prevSlide();
-    });
-
-    // Touch / swipe
+    // Swipe (mobile)
     let startX = 0;
     track.addEventListener('touchstart', e=>{ startX = e.touches[0].clientX; }, { passive:true });
     track.addEventListener('touchend', e=>{
       const dx = startX - e.changedTouches[0].clientX;
-      if (Math.abs(dx) > 50) (dx > 0 ? nextSlide : prevSlide)();
+      if (Math.abs(dx) > 40) (dx > 0 ? nextSlide : prevSlide)();
     }, { passive:true });
 
-    // Optional: fix mobile 100vh quirks by syncing --vh
+    // Fix mobile 100vh quirks by syncing --vh to innerHeight
     function setVhVar(){ document.documentElement.style.setProperty('--vh', `${window.innerHeight}px`); }
     setVhVar(); addEventListener('resize', setVhVar);
 
