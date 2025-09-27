@@ -1,169 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>Mobile Fullscreen Slider</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Mobile Slider</title>
   <style>
-    /* Reset + mobile viewport helpers */
     *{box-sizing:border-box;margin:0;padding:0}
-    html, body { height: 100%; }
-    :root { --vh: 100vh; }            /* fallback */
-    @supports (height: 100dvh){
-      :root { --vh: 100dvh; }         /* mobile-safe height */
-    }
-
+    html,body{height:100%}
+    
     body{
-      background:#000;                /* visible while images load */
-      overflow:hidden;                /* no scroll; it's a fullscreen slider */
-      touch-action: pan-y;            /* allow vertical page gestures if inside webview */
-      -webkit-tap-highlight-color: transparent;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:#000;
+      overflow:hidden;
+      touch-action:pan-y;
+      -webkit-tap-highlight-color:transparent;
+      font-family:system-ui,sans-serif;
     }
 
-    /* Root slider takes the whole screen */
-    .slider-root{
-      position: fixed; inset: 0;
-      width: 100vw;
-      height: var(--vh);
-      overflow: hidden;
+    .slider{
+      position:fixed;
+      inset:0;
+      width:100vw;
+      height:100vh;
+      overflow:hidden;
     }
 
-    /* Track is N * 100vw; we translate it by slides */
-    .slider-track{
-      height: 100%;
-      display: flex;
-      will-change: transform;
-      transition: transform .5s ease-in-out;
+    .track{
+      height:100%;
+      display:flex;
+      transition:transform .5s ease-in-out;
     }
 
-    /* Each slide is a fullscreen background image */
     .slide{
-      width: 100vw;
-      height: var(--vh);
-      flex: 0 0 100vw;
-      background-size: cover;       /* full image, no letterboxing */
-      background-position: center;  /* adjust focal point per image if needed */
-      background-repeat: no-repeat;
+      width:100vw;
+      height:100vh;
+      flex:0 0 100vw;
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
     }
 
-    /* Dots (minimal) */
-    .slider-dots{
-      position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
-      display: flex; gap: 10px; z-index: 5;
-      padding: 6px 10px; border-radius: 999px;
-      background: rgba(0,0,0,.28);
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(255,255,255,.15);
+    .dots{
+      position:fixed;
+      left:50%;
+      bottom:20px;
+      transform:translateX(-50%);
+      display:flex;
+      gap:8px;
+      z-index:5;
+      padding:8px 12px;
+      border-radius:20px;
+      background:rgba(0,0,0,.3);
     }
+
     .dot{
-      width: 8px; height: 8px; border-radius: 50%;
-      background: rgba(255,255,255,.6);
-      border: 2px solid rgba(255,255,255,.95);
-      transition: transform .15s, background .15s;
-      cursor: pointer;
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:rgba(255,255,255,.5);
+      transition:all .2s;
     }
-    .dot.active{ background:#fff; transform: scale(1.15); }
 
-    /* Arrows (kept small for mobile; remove if you don’t want them) */
-    .nav{
-      position: fixed; top: 50%; transform: translateY(-50%);
-      width: 40px; height: 40px; border-radius: 50%;
-      display: grid; place-items: center; z-index: 5;
-      background: rgba(0,0,0,.35); color:#fff; border: 1px solid rgba(255,255,255,.25);
-      user-select: none;
-    }
-    .prev{ left: 10px; } .next{ right: 10px; }
-
-    /* Desktop: still works, but keep everything simple without changing size logic */
-    @media (min-width: 768px){
-      .nav{ width: 44px; height: 44px; }
-      .dot{ width: 9px; height: 9px; }
+    .dot.active{
+      background:#fff;
+      transform:scale(1.2);
     }
   </style>
 </head>
 <body>
-
-  <div class="slider-root" id="sliderRoot">
-    <div class="slider-track" id="sliderTrack"></div>
-
-    <!-- Controls (tap targets kept small) -->
-    <button class="nav prev" aria-label="Previous" id="prevBtn">&#8249;</button>
-    <button class="nav next" aria-label="Next" id="nextBtn">&#8250;</button>
-
-    <div class="slider-dots" id="dots"></div>
+  <div class="slider">
+    <div class="track" id="track" style="width:500vw">
+      <div class="slide" style="background-image:url('./images/Artboard\ 1-100.jpg')"></div>
+      <div class="slide" style="background-image:url('./images/Artboard\ 2-100.jpg')"></div>
+      <div class="slide" style="background-image:url('./images/Artboard\ 3-100.jpg')"></div>
+      <div class="slide" style="background-image:url('./images/Artboard\ 4-100.jpg')"></div>
+      <div class="slide" style="background-image:url('./images/Artboard\ 5-100.jpg')"></div>
+    </div>
+    
+    <div class="dots">
+      <div class="dot active"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
   </div>
 
   <script>
-    // 🔧 Put your images here. Use plain file names; we will encode spaces safely.
-    const images = [
-      "./images/Artboard 1-100.jpg",
-      "./images/Artboard 2-100.jpg",
-      "./images/Artboard 3-100.jpg",
-      "./images/Artboard 4-100.jpg",
-      "./images/Artboard 5-100.jpg",
-    ];
-
-    // Minimal JS for mobile
     let current = 0;
-    const track = document.getElementById('sliderTrack');
-    const dotsWrap = document.getElementById('dots');
-    const prev   = document.getElementById('prevBtn');
-    const next   = document.getElementById('nextBtn');
+    const track = document.getElementById('track');
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.dot');
 
-    // Build slides + dots dynamically and set track width
-    function build() {
-      // slides
-      track.innerHTML = images.map((src) => {
-        const safe = encodeURI(src); // handles spaces and unicode safely
-        return `<section class="slide" style="background-image:url('${safe}')"></section>`;
-      }).join('');
-
-      // width = N * 100vw
-      track.style.width = `${images.length * 100}vw`;
-
-      // dots
-      dotsWrap.innerHTML = images.map((_, i) =>
-        `<div class="dot${i===0 ? ' active':''}"></div>`
-      ).join('');
-
-      // dot click handlers
-      dotsWrap.querySelectorAll('.dot').forEach((d, i) => {
-        d.addEventListener('click', () => go(i));
-      });
-    }
-
-    function setActiveDot() {
-      dotsWrap.querySelectorAll('.dot').forEach((d, idx) =>
-        d.classList.toggle('active', idx === current)
-      );
-    }
-
-    function go(i){
-      current = (i + images.length) % images.length;
+    function go(i) {
+      current = (i + slides.length) % slides.length;
       track.style.transform = `translateX(-${current * 100}vw)`;
-      setActiveDot();
+      dots.forEach((d, idx) => d.classList.toggle('active', idx === current));
     }
-    function nextSlide(){ go(current + 1); }
-    function prevSlide(){ go(current - 1); }
 
-    next.addEventListener('click', nextSlide);
-    prev.addEventListener('click', prevSlide);
-
-    // Swipe (mobile)
+    // Swipe
     let startX = 0;
-    track.addEventListener('touchstart', e=>{ startX = e.touches[0].clientX; }, { passive:true });
-    track.addEventListener('touchend', e=>{
+    track.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+    track.addEventListener('touchend', e => {
       const dx = startX - e.changedTouches[0].clientX;
-      if (Math.abs(dx) > 40) (dx > 0 ? nextSlide : prevSlide)();
-    }, { passive:true });
+      if (Math.abs(dx) > 50) go(current + (dx > 0 ? 1 : -1));
+    });
 
-    // Fix mobile 100vh quirks by syncing --vh to innerHeight
-    function setVhVar(){ document.documentElement.style.setProperty('--vh', `${window.innerHeight}px`); }
-    setVhVar(); addEventListener('resize', setVhVar);
+    // Dot navigation
+    dots.forEach((d, i) => d.addEventListener('click', () => go(i)));
 
-    // Init
-    build();
     go(0);
   </script>
 </body>
