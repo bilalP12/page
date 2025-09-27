@@ -3,24 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Image Slider (Fixed Size Across Devices)</title>
+  <title>Image Slider (Background from Slides)</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
 
     body {
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: #0b1220;
       color: #fff;
       min-height: 100dvh;
       display: grid;
-      place-items: center;     /* center the slider on the page */
+      place-items: center;    /* center the slider on the page */
       padding: 16px;
+      overflow: hidden;       /* hide background overscan */
+      background: #0b1220;    /* fallback while first image loads */
     }
 
-    /* ===== Stage: fixed aspect ratio & capped width =====
-       - Keeps the same "size" feel on laptop & mobile
-       - 16:9 area, centered, letterboxed if needed
-    */
+    /* ===== Fullscreen blurred background driven by current slide ===== */
+    .bg {
+      position: fixed;
+      inset: -10%;            /* overscan so blur edges aren’t visible */
+      z-index: 0;
+      transform: scale(1.08); /* counter blur shrink */
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      filter: blur(24px) saturate(115%);
+      transition: background-image .35s ease-out, opacity .35s ease-out, filter .35s ease-out;
+      opacity: 0.95;
+    }
+    /* Soft dark veil for readability */
+    .bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,.35), rgba(0,0,0,.55));
+    }
+
+    /* ===== Stage: fixed aspect ratio & capped width ===== */
     .stage {
       width: min(100vw, 1200px);   /* cap width on desktops */
       aspect-ratio: 16 / 9;        /* fixed viewing area */
@@ -29,16 +49,13 @@
       overflow: hidden;
       position: relative;
       box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      z-index: 1;                  /* above the blurred bg */
     }
 
-    /* Inner container fills the stage entirely */
-    .slider-container {
-      position: absolute; inset: 0;
-      overflow: hidden;
-    }
+    .slider-container { position: absolute; inset: 0; overflow: hidden; }
 
     .slider {
-      width: 500%;            /* 5 slides -> 5 * 100% */
+      width: 500%;                 /* 5 slides -> 5 * 100% */
       height: 100%;
       display: flex;
       will-change: transform;
@@ -52,14 +69,14 @@
       background: #000;
     }
 
-    /* KEY: show whole image, same size across devices */
+    /* Show whole image consistently; no cropping */
     .slide img {
       width: 100%;
       height: 100%;
-      object-fit: contain;    /* no cropping; maintains logo/artwork */
+      object-fit: contain;         /* change to 'cover' if you prefer edge-to-edge */
       object-position: center;
       display: block;
-      background: #000;       /* visible bars if image aspect != 16:9 */
+      background: #000;
     }
 
     .slide-content {
@@ -96,7 +113,6 @@
     .prev { left: 12px; }
     .next { right: 12px; }
 
-    /* Small screens: the stage scales down but aspect stays 16:9 */
     @media (max-width: 420px) {
       .slider-nav { width: 38px; height: 38px; }
       .indicator { width: 9px; height: 9px; }
@@ -104,6 +120,9 @@
   </style>
 </head>
 <body>
+
+  <!-- Blurred background that mirrors current slide -->
+  <div class="bg" id="bg"></div>
 
   <!-- Fixed-size stage -->
   <div class="stage" aria-label="Image slider, 5 slides">
@@ -166,11 +185,24 @@
     const slides = document.querySelectorAll('.slide');
     const indicators = document.querySelectorAll('.indicator');
     const slider = document.querySelector('.slider');
+    const bg = document.getElementById('bg');
+
+    // helper: set the blurred background to current slide image
+    function setBackgroundFromSlide(index){
+      const img = slides[index].querySelector('img');
+      if (!img) return;
+      const url = img.getAttribute('src');
+      // Preload for smooth swap
+      const preload = new Image();
+      preload.onload = () => { bg.style.backgroundImage = `url('${url}')`; };
+      preload.src = url;
+    }
 
     function updateSlider() {
       slider.style.transition = 'transform 0.6s ease-in-out';
       slider.style.transform  = `translateX(-${currentSlide * 20}%)`;
       indicators.forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
+      setBackgroundFromSlide(currentSlide);   // << update background
     }
 
     function nextSlide() {
@@ -198,13 +230,14 @@
     // Touch/swipe support
     let startX = 0;
     slider.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
-    slider.addEventListener('touchend', (e) => {
+    slider.addEventListener('touchend',   (e) => {
       const endX = e.changedTouches[0].clientX;
       const diff = startX - endX;
-      const threshold = 50;
-      if (Math.abs(diff) > threshold) (diff > 0 ? nextSlide : prevSlide)();
+      if (Math.abs(diff) > 50) (diff > 0 ? nextSlide : prevSlide)();
     }, { passive: true });
 
+    // init
+    setBackgroundFromSlide(currentSlide);
     updateSlider();
   </script>
 </body>
